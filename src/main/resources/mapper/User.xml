@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.homework.examSystem.dao.UserDao">
+
+    <insert id="createUser" parameterType="User">
+        <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Long">
+            SELECT LAST_INSERT_ID();
+        </selectKey>
+        insert into sys_users(username, password, salt, locked)
+        values(#{username},#{password},#{salt},#{locked});
+    </insert>
+
+    <delete id="deleteUser" parameterType="java.lang.Long">
+        delete from sys_users_roles WHERE user_id=#{userId};
+        delete from sys_users
+        where id=#{userId};
+    </delete>
+
+    <insert id="correlationRole">
+        insert into sys_users_roles(user_id, role_id)
+        values(#{userId},#{roleId})
+    </insert>
+
+    <delete id="uncorrelationRole">
+        delete from sys_users_roles
+        where user_id=#{userId} and role_id=#{roleId}
+    </delete>
+
+    <select id="findById" resultType="User">
+        select *
+        from sys_users
+        where id=#{userId};
+    </select>
+
+    <select id="findUserRole" resultType="UserRole">
+        select user_id as userId, role_id as roleId
+        FROM sys_users_roles
+        where user_id=#{userId} and role_id=#{roleId}
+    </select>
+
+    <select id="findOne" resultType="User">
+        select id, username, password, salt, locked
+        from sys_users
+        where id=#{userId}
+    </select>
+
+    <select id="findByUsername" resultType="User">
+        select id, username, password, salt, locked
+        from sys_users
+        where username=#{username}
+    </select>
+
+    <select id="findRoles" resultType="java.lang.String">
+        select r.name
+        from sys_users u, sys_roles r, sys_users_roles ur
+        where u.username=#{username} and u.id=ur.user_id and r.id=ur.role_id;
+    </select>
+
+    <select id="findRolesByUserId" resultType="Role">
+        select * from sys_roles
+        WHERE id in
+          (SELECT role_id
+           FROM sys_users_roles
+           WHERE user_id=#{userId});
+    </select>
+
+    <select id="findPermissions" resultType="java.lang.String">
+        select p.name
+        from sys_permissions p, sys_roles_permissions rp
+        where p.id=rp.permission_id and rp.role_id in
+          (select role_id
+           from sys_users u, sys_users_roles ur
+           where u.username=#{username} and u.id=ur.user_id)
+    </select>
+
+    <select id="findPermissionsByUserId" resultType="Permission">
+        select * from sys_permissions
+        WHERE id IN
+          (SELECT rp.permission_id
+           FROM sys_roles_permissions rp, sys_users_roles ur
+            WHERE rp.role_id=ur.role_id and ur.user_id=#{userId});
+    </select>
+
+    <select id="findUsers" resultType="User">
+        select *
+        from sys_users;
+    </select>
+
+    <update id="updateUser" parameterType="User">
+        UPDATE sys_users
+        SET username=#{username}, password=#{password}, salt=#{salt}, locked=#{locked}
+        WHERE id=#{id};
+    </update>
+</mapper>
